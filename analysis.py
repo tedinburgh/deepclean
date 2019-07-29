@@ -83,6 +83,16 @@ def plot_poly(t, data, label, **kwargs):
     else:
         alpha = 0.2
 
+    if 'dmin' in kwargs.keys():
+        dmin = kwargs['dmin']
+    else:
+        dmin = 0
+
+    if 'dmax' in kwargs.keys():
+        dmax = kwargs['dmax']
+    else:
+        dmax = 1
+
     verts = np.zeros((sample_length - 1, 4, 2))
     for idx in np.arange(sample_length - 1):
         ts = np.array([t[idx], t[idx + 1], t[idx + 1], t[idx]])
@@ -100,34 +110,50 @@ def plot_poly(t, data, label, **kwargs):
 
 with PdfPages('display_test_label_ws.pdf') as pdf:
 
+    n_columns = 4
+    n_rows = 3
+
     fig = plt.figure(figsize = (20, 25))
+    gs = gridspec.GridSpec(n_columns, n_rows)
 
     for ii in np.arange(n_test):
-        ll = ii % 12
+        ll = ii % (n_rows * n_columns)
 
-        ax = plt.subplot(4, 3, ll + 1)
+        ax = plt.subplot(gs[ll])
         plt.plot(t, test_data[ii], color = (0, 0, 0))
-        plot_poly(t, test_data[ii], test_label_ws[ii])
+        plot_poly(t, test_data[ii], test_label_ws[ii], dmin = dmin, dmax = dmax)
         ax.set_ylim([dmin, dmax])
 
-        if ii % 12 == 11:
+        if ii % (n_rows * n_columns) == (n_rows * n_columns - 1):
+            gs.tight_layout(fig)
+            gs.update(wspace = 0.1, hspace = 0.1)
+
             pdf.savefig()
             plt.close()
-            fig = plt.figure(figsize = (20, 25))
 
-    pdf.savefig()  # saves the current figure into a pdf page
+            fig = plt.figure(figsize = (20, 25))
+            gs = gridspec.GridSpec(n_columns, n_rows)
+
+    gs.tight_layout(fig)
+    gs.update(wspace = 0.1, hspace = 0.1)
+
+    pdf.savefig()
     plt.close('all')
 
 with PdfPages('display_test_label_s.pdf') as pdf:
 
+    n_columns = 4
+    n_rows = 3
+
     fig = plt.figure(figsize = (20, 25))
+    gs = gridspec.GridSpec(n_columns, n_rows)
 
     colors = plt.get_cmap('tab10').colors
 
     for ii in np.arange(n_test):
-        ll = ii % 12
+        ll = ii % (n_columns * n_rows)
 
-        ax = plt.subplot(4, 3, ll + 1)
+        ax = plt.subplot(gs[ll])
         plt.plot(t, test_data[ii], color = (0, 0, 0))
 
         if test_label_s[ii] == 1:
@@ -142,10 +168,18 @@ with PdfPages('display_test_label_s.pdf') as pdf:
 
         ax.set_ylim([dmin, dmax])
 
-        if ii % 12 == 11:
+        if ii % (n_columns * n_rows) == (n_columns * n_rows - 1):
+            gs.tight_layout(fig)
+            gs.update(wspace = 0.1, hspace = 0.1)
+            
             pdf.savefig()
             plt.close()
+
             fig = plt.figure(figsize = (20, 25))
+            gs = gridspec.GridSpec(n_columns, n_rows)
+
+    gs.tight_layout(fig)
+    gs.update(wspace = 0.1, hspace = 0.1)
 
     pdf.savefig()
     plt.close('all')
@@ -180,7 +214,7 @@ file_dir_vae = 'vae_files'
 file_prefix = 'vae_results_'
 
 files = os.listdir('./' + file_dir_vae)
-vae_files = np.array(files)[[files[x][:np.size(file_prefix)] == file_prefix \
+vae_files = np.array(files)[[files[x][:len(file_prefix)] == file_prefix \
     for x in np.arange(np.size(files))]]
 
 train_reconstruction_vae = np.zeros_like(train_reconstruction_pca)
@@ -214,7 +248,7 @@ with PdfPages('reconstruction.pdf') as pdf:
     
     fig = plt.figure(figsize = (11, 5))
     gs = gridspec.GridSpec(4, 11)
-    
+
     colors = plt.get_cmap('Dark2').colors
 
     fig_latent_dims = [2, 5, 10, 100]
@@ -234,7 +268,7 @@ with PdfPages('reconstruction.pdf') as pdf:
             color = colors[ii], lw = 1.3)
         plt.setp(ax_current.get_xticklabels(), visible = False)
         plt.setp(ax_current.get_yticklabels(), visible = False)
-        ax_current.set_title('Latent dim ' + str(latent_dims_fig[ii]))
+        ax_current.set_title('Latent dim ' + str(fig_latent_dims[ii]))
 
     ax_current.set_ylabel('PCA reconstruction\nABP (mmHg)')
     plt.setp(ax_current.get_yticklabels(), visible = True)
@@ -364,7 +398,7 @@ with PdfPages('logmse.pdf') as pdf:
         verts = np.zeros((n_percentiles - 1, 4, 2))
         width[:, ii] /= np.max(width[:, ii])
         for pt in np.arange(n_percentiles - 1):
-            ys = np.array([train_percentiles[pt, ii], train_percentiles[pt + 1, ii], \
+            ys = np.log([train_percentiles[pt, ii], train_percentiles[pt + 1, ii], \
                 train_percentiles[pt + 1, ii], train_percentiles[pt, ii]])
             xs = np.array([-1, -1, 1, 1]) * width[pt, ii] * 0.1 + ii
             verts[pt] = list(zip(xs, ys))
@@ -396,11 +430,11 @@ with PdfPages('logmse.pdf') as pdf:
     train_percentiles = np.percentile(train_mse_vae, np.arange(0, 102, 2), axis = 0)
     width = 1 / np.abs(np.diff(np.log(train_percentiles), axis = 0))
 
-    for ii in np.arange(n_latent_dims):
+    for ii in np.arange(n_dims):
         verts = np.zeros((n_percentiles - 1, 4, 2))
         width[:, ii] /= np.max(width[:, ii])
         for pt in np.arange(n_percentiles - 1):
-            ys = np.array([train_percentiles[pt, ii], train_percentiles[pt + 1, ii], \
+            ys = np.log([train_percentiles[pt, ii], train_percentiles[pt + 1, ii], \
                 train_percentiles[pt + 1, ii], train_percentiles[pt, ii]])
             xs = np.array([-1, -1, 1, 1]) * width[pt, ii] * 0.1 + ii
             verts[pt] = list(zip(xs, ys))
@@ -469,7 +503,7 @@ for ii in np.arange(n_dims):
         np.array([window_mse(test_data[x,:,0], test_reconstruction_pca[x,:,ii], window) \
             for x in np.arange(n_test)])
     test_wmse_vae[:,:,ii] = \
-        np.array([window_mse(bad_data[x,:,0], test_reconstruction_vae[x,:,ii], window) \
+        np.array([window_mse(test_data[x,:,0], test_reconstruction_vae[x,:,ii], window) \
             for x in np.arange(n_test)])
 
 # THIS IS INCREDIBLY TIME CONSUMING!
@@ -491,6 +525,8 @@ for ii in np.arange(n_dims):
 train_wmse_pca_mean = np.mean(train_wmse_pca, axis = 1)
 train_wmse_vae_mean = np.mean(train_wmse_vae, axis = 1)
 
+threshold_percentile = 99
+
 threshold_wmse_pca = np.percentile(train_wmse_pca_mean, threshold_percentile, axis = 0)
 threshold_wmse_vae = np.percentile(train_wmse_vae_mean, threshold_percentile, axis = 0)
 
@@ -501,6 +537,7 @@ test_wmse_label_pca = np.zeros_like(test_wmse_pca)
 test_wmse_label_vae = np.zeros_like(test_wmse_vae)
 
 def window_mse_label(window_mse, threshold):
+    half_window = np.ceil(window / 2).astype(int)
     label = np.array([[np.any((window_mse > threshold)[y, \
         np.max((0, x - half_window)):np.min((x + half_window, sample_length))]) \
         for x in np.arange(sample_length)] for y in np.arange(n_test)])  
@@ -522,51 +559,68 @@ jj = np.where(latent_dim == np.array(latent_dims))[0]
 
 with PdfPages('display_vae_ws_ld' + np.str(latent_dim) + '.pdf') as pdf:
 
+    n_columns = 4
+    n_rows = 3
+
     fig = plt.figure(figsize = (20, 25))
+    gs = gridspec.GridSpec(n_columns, n_rows)
 
     colors = plt.get_cmap('tab10').colors
 
     for ii in np.arange(n_test):
-        ll = ii % 12
+        ll = ii % (n_columns * n_rows)
 
-        ax = plt.subplot(4, 3, ll + 1)
+        ax = plt.subplot(gs[ll])
         plt.plot(t, test_data[ii], color = (0, 0, 0))
         plt.plot(t, test_reconstruction_vae[ii,:,jj][0, :], color = colors[1])
-        plot_poly(t, test_data[ii], test_label_ws[ii], col = colors[0])
-        plot_poly(t, test_data[ii], test_wmse_label_vae[ii,:,jj], col = colors[1])
+        plot_poly(t, test_data[ii], test_label_ws[ii], \
+            col = colors[0], dmin = dmin, dmax = dmax)
+        plot_poly(t, test_data[ii], test_wmse_label_vae[ii,:,jj], \
+            col = colors[1], dmin = dmin, dmax = dmax)
 
         ax.set_ylim([dmin, dmax])
 
-        if ii % 12 == 11:
+        if ii % (n_columns * n_rows) == (n_columns * n_rows - 1):
+            gs.tight_layout(fig)
+            gs.update(wspace = 0.1, hspace = 0.1)
+
             pdf.savefig()
             plt.close()
 
             fig = plt.figure(figsize = (20, 25))
 
+    gs.tight_layout(fig)
+    gs.update(wspace = 0.1, hspace = 0.1)
+
     pdf.savefig()
     plt.close()
 
 latent_dim = 20
+jj = np.where(latent_dim == np.array(latent_dims))[0]
 
 with PdfPages('display_vae_s_ld' + np.str(latent_dim) + '.pdf') as pdf:
 
+    n_columns = 4
+    n_rows = 3
+
     fig = plt.figure(figsize = (20, 25))
+    gs = gridspec.GridSpec(n_columns, n_rows)
 
     colors = plt.get_cmap('tab10').colors
 
     for ii in np.arange(n_test):
-        ll = ii % 12
+        ll = ii % (n_columns * n_rows)
 
-        plt.subplot(4, 3, ll + 1)
-        plt.plot(t, bad_data[ii], color = (0, 0, 0))
-        plt.plot(t, bad_prediction_vae[ii,:,jj][0, :], color = colors[1])
+        ax = plt.subplot(gs[ll])
+        plt.plot(t, test_data[ii], color = (0, 0, 0))
+        plt.plot(t, test_reconstruction_vae[ii,:,jj][0, :], color = colors[1])
 
         if test_label_s[ii] == 1:
+            print(ii)
             verts = np.zeros((1, 4, 2))
             ts = np.array([t[0], t[-1], t[-1], t[0]])
             ys = np.array([dmin, dmin, dmax, dmax])
             verts[0] = list(zip(ts, ys))
-            from matplotlib.collections import PolyCollection
             poly = PolyCollection(verts, facecolors = colors[0], \
                 edgecolors = None)
             poly.set_alpha(0.2)
@@ -577,7 +631,6 @@ with PdfPages('display_vae_s_ld' + np.str(latent_dim) + '.pdf') as pdf:
             ts = np.array([t[0], t[-1], t[-1], t[0]])
             ys = np.array([dmin, dmin, dmax, dmax])
             verts[0] = list(zip(ts, ys))
-            from matplotlib.collections import PolyCollection
             poly = PolyCollection(verts, facecolors = colors[1], \
                 edgecolors = None)
             poly.set_alpha(0.2)
@@ -585,31 +638,47 @@ with PdfPages('display_vae_s_ld' + np.str(latent_dim) + '.pdf') as pdf:
 
         ax.set_ylim([dmin, dmax])
 
-        if ii % 12 == 11:
+        if ii % (n_columns * n_rows) == (n_columns * n_rows - 1):
+            gs.tight_layout(fig)
+            gs.update(wspace = 0.1, hspace = 0.1)
+
             pdf.savefig()
             plt.close()
 
             fig = plt.figure(figsize = (20, 25))
+            gs = gridspec.GridSpec(n_columns, n_rows)
 
+    gs.tight_layout(fig)
+    gs.update(wspace = 0.1, hspace = 0.1)
+            
     pdf.savefig()
     plt.close()
 
 # ---------------------------------------------------------------------------
 ## proportion correct (within sample)
 
-pcorrect_pca = np.sum(np.equal(test_label_ws, test_wmse_label_pca), axis = 1)
-pcorrect_pca /= sample_length
-pcorrect_a_pca = np.sum(np.logical_and(test_label_ws, test_wmse_label_pca), axis = 1)
-pcorrect_a_pca /= np.sum(test_wmse_label_pca, axis = 1) * pcorrect_a_pca / pcorrect_a_pca
-pcorrect_n_pca = np.sum(np.logical_and(test_label_ws == 0, test_wmse_label_pca == 0), axis = 1)
-pcorrect_n_pca /= np.sum(test_wmse_label_pca == 0, axis = 1) * pcorrect_n_pca / pcorrect_n_pca
+def tile_fun(data, n):
+    return np.moveaxis(np.tile(data, (n, 1, 1)), 0, -1)
 
-pcorrect_vae = np.sum(np.equal(test_label_ws, test_wmse_label_vae), axis = 1)
-pcorrect_vae /= sample_length
-pcorrect_a_vae = np.sum(np.logical_and(test_label_ws, test_wmse_label_vae), axis = 1)
-pcorrect_a_vae /= np.sum(test_wmse_label_vae, axis = 1) * pcorrect_a_vae / pcorrect_a_vae
-pcorrect_n_vae = np.sum(np.logical_and(test_label_ws == 0, test_wmse_label_vae == 0), axis = 1)
-pcorrect_n_vae /= np.sum(test_wmse_label_vae == 0, axis = 1) * pcorrect_n_vae / pcorrect_n_vae
+test_label_ws_tile = np.moveaxis(np.tile(test_label_ws, (n_dims, 1, 1)), 0, -1)
+
+pcorrect_pca = np.sum(np.equal(test_label_ws_tile, test_wmse_label_pca), axis = 1)
+pcorrect_pca = pcorrect_pca / sample_length
+pcorrect_a_pca = np.sum(np.logical_and(test_label_ws_tile, test_wmse_label_pca), axis = 1)
+pcorrect_a_pca = pcorrect_a_pca / np.sum(test_wmse_label_pca, axis = 1) \
+    * pcorrect_a_pca / pcorrect_a_pca
+pcorrect_n_pca = np.sum(np.logical_and(test_label_ws_tile == 0, test_wmse_label_pca == 0), axis = 1)
+pcorrect_n_pca = pcorrect_n_pca / np.sum(test_wmse_label_pca == 0, axis = 1) \
+    * pcorrect_n_pca / pcorrect_n_pca
+
+pcorrect_vae = np.sum(np.equal(test_label_ws_tile, test_wmse_label_vae), axis = 1)
+pcorrect_vae = pcorrect_vae / sample_length
+pcorrect_a_vae = np.sum(np.logical_and(test_label_ws_tile, test_wmse_label_vae), axis = 1)
+pcorrect_a_vae = pcorrect_a_vae / np.sum(test_wmse_label_vae, axis = 1) \
+    * pcorrect_a_vae / pcorrect_a_vae
+pcorrect_n_vae = np.sum(np.logical_and(test_label_ws_tile == 0, test_wmse_label_vae == 0), axis = 1)
+pcorrect_n_vae = pcorrect_n_vae / np.sum(test_wmse_label_vae == 0, axis = 1) \
+    * pcorrect_n_vae / pcorrect_n_vae
 
 # ---------------------------------------------------------------------------
 ## within sample performance
@@ -647,7 +716,7 @@ with PdfPages('within_sample.pdf') as pdf:
             zero_one_nan(pcorrect_n_pca[:,ii]), color = colors[4], s = 0.1)
         plt.scatter(ii + 0.3, 1, color = colors[4], s = 0.1 * np.sum(pcorrect_n_pca[:,ii] == 1))
         plt.scatter(ii + 0.3, 0, color = colors[4], s = 0.1 * np.sum(pcorrect_n_pca[:,ii] == 0))
-        plt.scatter(ii + 0.2, np.nanmean(spe_pca, axis = 0)[ii], \
+        plt.scatter(ii + 0.2, np.nanmean(pcorrect_n_pca, axis = 0)[ii], \
             color = colors[4], s = 15, marker = 's')
 
     ax_pca.set_xticks(np.arange(n_dims))
@@ -655,7 +724,7 @@ with PdfPages('within_sample.pdf') as pdf:
     ax_pca.set_yticks(np.arange(0, 1.1, 0.1))
     ax_pca.set_xlabel('Latent dimension')
     ax_pca.set_ylabel('% correctly identified')
-    ax_pca.title('PCA')
+    ax_pca.set_title('PCA')
     ax_pca.yaxis.grid()
 
     ax_vae = plt.subplot(gs[1], sharey = ax_pca)
@@ -681,12 +750,12 @@ with PdfPages('within_sample.pdf') as pdf:
         plt.scatter(ii + 0.2, np.nanmean(pcorrect_n_vae, axis = 0)[ii], \
             color = colors[4], s = 15, marker = 's')
 
-    ax1.set_xticks(np.arange(n_latent_dims))
-    ax1.set_xticklabels(latent_dims)
-    ax1.set_xlabel('Latent dimension')
-    ax1.title('VAE')
-    ax1.yaxis.grid()
-    plt.setp(ax1.get_yticklabels(), visible = False)
+    ax_vae.set_xticks(np.arange(n_dims))
+    ax_vae.set_xticklabels(latent_dims)
+    ax_vae.set_xlabel('Latent dimension')
+    ax_vae.set_title('VAE')
+    ax_vae.yaxis.grid()
+    plt.setp(ax_vae.get_yticklabels(), visible = False)
 
     pcorrect = mlines.Line2D([], [], lw = 0, marker = 'o', markersize = 3, \
         color = colors[3], label = 'Entire sample')
@@ -731,7 +800,7 @@ for vae_file in vae_files:
             file_suffix = int(vae_file.strip(file_prefix).strip('.h5'))
             break
 
-hf_vae = h5py.File(file_dir_vae + '/' + 'vae_results_' + file_suffix + '.h5', 'r')
+hf_vae = h5py.File(file_dir_vae + '/' + 'vae_results_' + np.str(file_suffix) + '.h5', 'r')
 
 z_train = hf_vae['z_train_prediction']
 z_validation = hf_vae['z_validation_prediction']
@@ -874,14 +943,14 @@ with PdfPages('example_test.pdf') as pdf:
         test_label_stacked = np.hstack(test_label_ws[ll])
 
         plot_poly(t, test_data[ll], \
-            np.logical_and(test_label_ws[ll,:,0], np.logical_not(test_wmse_label_vae[ll,:,jj])), \
-            col = colors[3], alpha = 0.6)
+            np.logical_and(test_label_ws[ll,:], np.logical_not(test_wmse_label_vae[ll,:,jj])), \
+            col = colors[3], alpha = 0.6, dmin = ymin, dmax = ymax)
         plot_poly(t, test_data[ll], \
-            np.logical_and(np.logical_not(test_label_ws[ll,:,0]), test_wmse_label_vae[ll,:,jj]), \
-            col = colors[1], alpha = 0.2)
+            np.logical_and(np.logical_not(test_label_ws[ll,:]), test_wmse_label_vae[ll,:,jj]), \
+            col = colors[1], alpha = 0.2, dmin = ymin, dmax = ymax)
         plot_poly(t, test_data[ll], \
-            np.logical_and(test_label_ws[ll,:,0], test_wmse_label_vae[ll,:,jj]), \
-            col = .colors[2], alpha = 0.4)
+            np.logical_and(test_label_ws[ll,:], test_wmse_label_vae[ll,:,jj]), \
+            col = colors[2], alpha = 0.4, dmin = ymin, dmax = ymax)
 
         plt.plot(t, test_data[ll], color = (0, 0, 0), label = 'Data')
         plt.plot(t, test_reconstruction_vae[ll,:,jj][0, :], \

@@ -332,6 +332,11 @@ def preprocess(data_array):
 
 n_train = np.shape(train_data)[0]
 
+standardisation = np.array([tuple((mean, std))], \
+    dtype = [('mean', 'f8'), ('std', 'f8')])
+t_params = np.array([tuple((t_interval, sample_length))], \
+    dtype = [('t_interval', 'f8'), ('sample_length', 'i8')])
+
 # ---------------------------------------------------------------------------
 ## test set
 
@@ -357,9 +362,9 @@ hf.create_dataset('train_data', data = train_data)
 hf.create_dataset('validation_data', data = validation_data)
 hf.create_dataset('test_data', data = test_data)
 hf.create_dataset('shuffle', data = shuffle)
-hf.create_dataset('mean', data = mean)
-hf.create_dataset('std', data = std)
+hf.create_dataset('standardisation', data = standardisation)
 hf.create_dataset('test_idx', data = test_idx)
+hf.create_dataset('t_params', data = t_params)
 
 hf.close()
 
@@ -368,21 +373,32 @@ hf.close()
 
 with PdfPages('display_test.pdf') as pdf:
 
+    n_columns = 4
+    n_rows = 3
+
     fig = plt.figure(figsize = (20, 25))
+    gs = gridspec.GridSpec(n_columns, n_rows)
 
     for ii in np.arange(n_test):
-        ll = ii % 12
+        ll = ii % (n_rows * n_columns)
 
         ax = plt.subplot(4, 3, ll + 1)
         plt.plot(t, test_data[ii], color = (0, 0, 0), label = 'Input')
 
         ax.set_ylim([dmin, dmax])
 
-        if ii % 12 == 11:
+        if ii % (n_rows * n_columns) == (n_rows * n_columns - 1):
+            gs.tight_layout(fig)
+            gs.update(wspace = 0.1, hspace = 0.1)
+
             pdf.savefig()
             plt.close()
 
             fig = plt.figure(figsize = (20, 25))
+            gs = gridspec.GridSpec(n_columns, n_rows)
+
+    gs.tight_layout(fig)
+    gs.update(wspace = 0.1, hspace = 0.1)
 
     pdf.savefig()
     plt.close()

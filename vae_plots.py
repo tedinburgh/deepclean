@@ -169,9 +169,9 @@ if ('--reconstructions_test' in sys.argv):
         colors = plt.get_cmap('tab10').colors
 
         for ii in np.arange(n_test_plots):
-            jj = ii % 3
-            kk = ii // 3
-            ll = ii % 12
+            jj = ii % n_rows
+            kk = ii // n_rows
+            ll = ii % (n_columns * n_rows)
 
             ax = plt.subplot(gs[ll])
             plt.plot(t, data[ii, :, 0], color = (0, 0, 0), label = 'Input')
@@ -184,10 +184,10 @@ if ('--reconstructions_test' in sys.argv):
 
             if jj != 0:
                 plt.setp(ax.get_yticklabels(), visible = False)
-            if kk != 3:
+            if kk != n_rows:
                 plt.setp(ax.get_xticklabels(), visible = False)
 
-            if ii % 12 == 11 and kk != n_pages:
+            if ii % n_columns * n_rows == (n_columns * n_rows - 1) and kk != n_pages:
                 gs.tight_layout(fig)
                 gs.update(wspace = 0, hspace = 0)
 
@@ -195,7 +195,7 @@ if ('--reconstructions_test' in sys.argv):
                 plt.close()
 
                 fig = plt.figure(figsize = (20, 25))
-                gs = gridspec.GridSpec(4, 3)
+                gs = gridspec.GridSpec(n_columns, n_rows)
 
         gs.tight_layout(fig)
         gs.update(wspace = 0, hspace = 0)
