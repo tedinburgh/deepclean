@@ -1528,14 +1528,7 @@ def plot_index(index, **kwargs):
     from matplotlib.collections import PolyCollection
     poly = PolyCollection(verts, facecolors = cmap[label_temp], edgecolors = None)
 
-    # poly.set_alpha(0.2)
     plt.gca().add_collection(poly)
-
-    # segments = np.array([[[t['starttime'][x], y], [t['endtime'][x], y]] \
-    #                                 for x in np.arange(np.size(t))])
-
-    # lc = LineCollection(segments, colors = cmap[label_temp])
-    # lc.set_linewidth(3)
 
     # if ax does not exists as a kwarg, then we need to create a new 
     #   axis object
@@ -1580,12 +1573,10 @@ def plot_index(index, **kwargs):
     ax.set_ylim([0.8, 1.3])
     ax.set_yticks([])
 
-    ax.set_xlabel('s')
-
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
-    # function plotindex_h5 end
+    # function plot_index end
 
 def plot_block_section(data, index_block, label, starttime, endtime):
     startidx = (starttime - index_block['starttime']) * index_block['frequency'] \
@@ -1598,26 +1589,25 @@ def plot_block_section(data, index_block, label, starttime, endtime):
 
     starttime = index_block['starttime'] + (startidx - index_block['startidx']) \
         / index_block['frequency']
-    endtime = index_block['starttime'] + (endidx - index_block['startidx']) \
-        / index_block['frequency']
 
-    t = np.arange(starttime, endtime, 1 / index_block['frequency'])
+    t = np.arange(endidx - startidx) * 1 / index_block['frequency'] + starttime 
     data = data[startidx:endidx]
 
-    label = label[label['startidx'] > startidx]
-    label = label[label['startidx'] < endidx]
+    label_startidx = np.max((1, np.argmin(label['startidx'] < endidx)))
+    label_endidx = np.argmax(label['startidx'] > startidx)
 
+    label = label[label_startidx - 1:label_endidx]
     label = label[np.argsort(label['startidx'])]
 
-    cmap = plt.get_cmap('tab10')
-    cmap = np.vstack(((0, 0, 0), cmap.colors))
+    colors = plt.get_cmap('tab10').colors
+    colors = np.vstack(((0, 0, 0), colors))
 
     for ii in np.arange(np.size(label)):
         length = label[ii]['length'] + 1
         start = label[ii]['startidx'] - startidx
         end = label[ii]['startidx'] - startidx + length
         plt.plot(t[start:end], data[start:end], \
-            color = cmap[label[ii]['label']])
+            color = colors[label[ii]['label']])
 
 def index_to_time(index, idx):
     '''

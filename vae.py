@@ -183,9 +183,9 @@ def reconstruction_loss(x_input, x_outputs):
     return K.sum(reconstruction_loss)
 
 def kl_loss(z_mean, z_log_var):
-    kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
+    kl_loss = K.square(z_mean) + K.exp(z_log_var) - 1 - z_log_var
     kl_loss = K.sum(kl_loss, axis = -1)
-    kl_loss *= -0.5
+    kl_loss *= 0.5
     kl_loss *= beta
     return K.sum(kl_loss)
 

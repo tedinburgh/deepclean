@@ -402,5 +402,3 @@ with PdfPages('display_test.pdf') as pdf:
 
     pdf.savefig()
     plt.close()
-
-

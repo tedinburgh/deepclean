@@ -8,8 +8,10 @@ import matplotlib.pyplot as plt
 import time
 import h5py
 import os
+import sys
 
 from sklearn.decomposition import PCA
+from sklearn.metrics import roc_curve, roc_auc_score
 
 import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
@@ -40,6 +42,8 @@ try:
     hf_input.close()
 except:
     print('Input file missing or not correctly named')
+    hf_input.close()
+    sys.exit()
 
 try:
     hf_label = h5py.File('labels.h5', 'r')
@@ -48,6 +52,8 @@ try:
     hf_label.close()
 except:
     print('Label file missing or not correctly named')
+    hf_label.close()
+    sys.exit()
 
 dmin = np.min(test_data)
 dmax = np.max(test_data)
@@ -988,7 +994,72 @@ with PdfPages('example_test.pdf') as pdf:
     pdf.savefig()
     plt.close()
 
+# ---------------------------------------------------------------------------
+## roc and auc
 
+auc_pca = [roc_auc_score(test_label_s, test_mse_pca[:,ii]) for ii in np.arange(n_dims)]
+auc_vae = [roc_auc_score(test_label_s, test_mse_vae[:,ii]) for ii in np.arange(n_dims)]
+
+with PdfPages('roc.pdf') as pdf:
+
+    nrow = 2
+    ncol = n_dims // 2
+
+    fig = plt.figure(figsize = (11, 5.5))
+    gs = gridspec.GridSpec(nrow, ncol)
+
+    colors = plt.get_cmap('Dark2').colors
+
+    for ii in np.arange(n_dims):
+        jj = ii // ncol
+        kk = ii % ncol
+
+        fpr_vae, tpr_vae, thresholds_vae = roc_curve(test_label_s, test_mse_vae[:,ii])
+        fpr_pca, tpr_pca, thresholds_pca = roc_curve(test_label_s, test_mse_pca[:,ii])
+
+        auc_vae = roc_auc_score(test_label_s, test_mse_vae[:,ii])
+
+        ax = plt.subplot(gs[ii])
+        plt.plot([0, 1], [0, 1], linestyle = '--', lw = 1, color = (0, 0, 0))
+
+        plt.plot(fpr_pca, tpr_pca, linestyle = '-.', color = colors[ii], alpha = 0.2)
+        plt.plot(fpr_vae, tpr_vae, color = colors[ii], alpha = 0.8)
+
+        ax.text(0.2, 0, 'Latent dim ' + np.str(latent_dims[ii]) + ':')
+        ax.text(0.7, 0, 'AUC ' + np.str(np.round(auc_vae, 3)))
+
+        plt.scatter(1 - spe_pca[ii], sen_pca[ii], marker = 'o', lw = 0, s = 40, \
+            alpha = 0.4, color = colors[ii])
+        plt.scatter(1 - spe_vae[ii], sen_vae[ii], marker = 'o', lw = 0, s = 40, \
+            color = colors[ii])
+
+        if kk != 0:
+            ax.set_yticks([])
+        else:
+            ax.set_yticks(np.arange(0, 1.2, 0.2))
+            ax.set_yticklabels(['0', '0.2', '0.4', '0.6', '0.8', '1'])
+            ax.set_ylabel('TPR')
+        if jj != nrow - 1:
+            ax.set_xticks([])
+        else:
+            ax.set_xticks(np.arange(0, 1.2, 0.2))
+            ax.set_xticklabels(['0', '0.2', '0.4', '0.6', '0.8', '1'])
+            ax.set_xlabel('FPR')
+
+    pca = mlines.Line2D([], [], lw = 1, linestyle = '-.', color = (0, 0, 0), alpha = 0.4, \
+        label = 'PCA')
+    vae = mlines.Line2D([], [], color = (0, 0, 0), alpha = 0.8, label = 'VAE')
+    dot = mlines.Line2D([], [], color = (0, 0, 0), marker = 'o', lw = 0, markersize = 4, \
+        label = 'Training percentile threshold')
+
+    fig.legend(loc = 'lower center', bbox_to_anchor = (0.5, 0), \
+        handles = [pca, vae, dot], ncol = 3)
+
+    gs.tight_layout(fig, rect = [0, 0.08, 1, 1])
+    gs.update(wspace = 0, hspace = 0)
+
+    pdf.savefig()
+    plt.close()
 
 
 

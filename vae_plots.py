@@ -27,7 +27,7 @@ if ('--input_dir' in sys.argv):
     except:
         input_dir = './'
 
-hf_data = h5py.File('data_input.h5', 'r')
+hf_data = h5py.File('data_array.h5', 'r')
 hf_results = h5py.File(input_dir + 'vae_results_' + file_suffix + '.h5', 'r')
 
 def get_immediate_subdirectories(a_dir):
@@ -156,7 +156,8 @@ if ('--reconstructions_test' in sys.argv):
 
     data = np.zeros((n_test_plots, sample_length, 2))
     data[:, :, 0] = hf_data['test_data'][:n_test_plots, :, 0] 
-    data[:, :, 1] = hf_results['test_prediction'][:n_test_plots,:,0]
+    # data[:, :, 1] = hf_results['test_prediction'][:n_test_plots,:,0]
+    data[:, :, 1] = hf_results['test_prediction'][0, :n_test_plots, :]
 
     dmin = np.floor(np.max((np.min(data), -8))) - 1
     dmax = np.ceil(np.min((np.max(data), 15))) + 1
@@ -187,7 +188,7 @@ if ('--reconstructions_test' in sys.argv):
             if kk != n_rows:
                 plt.setp(ax.get_xticklabels(), visible = False)
 
-            if ii % n_columns * n_rows == (n_columns * n_rows - 1) and kk != n_pages:
+            if ll == (n_columns * n_rows - 1) and kk != n_pages:
                 gs.tight_layout(fig)
                 gs.update(wspace = 0, hspace = 0)
 
