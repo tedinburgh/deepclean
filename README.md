@@ -2,14 +2,21 @@
 
 Usage:
 
-preprocessing.py, functions.py require ICM+ hdf5 files with waveforms given as signals, though modifications can be made to these files such that similar datasets in hdf5 can be used. For more information about the structure of ICM+ hdf5 datasets, see https://www.ncbi.nlm.nih.gov/pubmed/29492546.
+preprocessing.py, functions.py require ICM+ hdf5 files with waveforms given as signals, though modifications can be made to these files such that similar datasets in hdf5 can be used. For more information about the structure of ICM+ hdf5 datasets, see https://www.ncbi.nlm.nih.gov/pubmed/29492546. It is not specifically designed to be run from the command line but from within python as required.
+
 functions.py contains functions for reading, checking and marking ICM+ waveforms from hdf5 file.
-preprocessing.py uses these functions for the preprocessing and displaying the ICM+ data as described within the manuscript, including splitting the data into training, validation and test sets.
-analysis.py generates all the post-processing (such as MSE metric calculation and DeepClean performance) and figures within the manuscript. analysis.py requires several hdf5 files, containing data, artefact annotations and DeepClean VAE output files.
+preprocessing.py uses these functions for the preprocessing and displaying the ICM+ data as described within the manuscript, including splitting the data into training, validation and test sets. It is not specifically designed to be run from the command line but from within python as required.
+
+analysis.py generates all the post-processing (such as MSE metric calculation and DeepClean performance) and figures within the manuscript. analysis.py requires several hdf5 files, containing data, artefact annotations and DeepClean VAE output files. It is not specifically designed to be run from the command line but from within python as required.
+
 vae.py trains DeepClean using a hdf5 data file containing training, validation and test data, returning reconstructions, latent predictions and network loss history during training. Specific hyperparameters may be given at the command line when running the script, which will overwrite default hyperparameter choices, the code may be extended to similarly include further hyperparameters. Example usage is 'python vae.py --latent_dim 5'.
-vae.sh is a bash script wrapper for GPU usage under slurm workload manager typically used in high performance computing.
-vae_plots.py returns a series of figures to visualise the output of vae.py. This includes reconstructions, latent space representations, reconstructions via the decoder from a latent grid embedding, and loss and validation loss history. Each required plot must be called at the command line when running the script and the first argument must give the file suffix relating to the DeepClean output file. Example usage is 'python vae_plots.py 1 --input_dir 'input' --output_dir 'output' --embedding --reconstructions --loss'.
-vae_plots.sh
+
+vae.sh is a bash script wrapper for GPU usage under slurm workload manager typically used in high performance computing. Hyperparameters given at the command line when running the script are passed through to vae.py. Example usage is 'slurm vae.sh --latent_dim 5'.
+
+vae_plots.py returns a series of figures to visualise the output of vae.py. This includes reconstructions, latent space representations, reconstructions via the decoder from a latent grid embedding, and loss and validation loss history. Each required plot must be called at the command line when running the script and the first argument must give the file suffix relating to the DeepClean output file. Example usage is 'python vae_plots.py 1 --input_dir INPUT_DIR --output_dir OUTPUT_DIR --reconstructions --embedding --loss', where 1 is the file suffix.
+
+vae_plots_dir.sh is a bash script wrapper for batch usage of vae_plots.py on an entire directory of DeepClean output files. Each required plot must be called at the command line when running the script and the first argument must give the input directory containing the DeepClean output files. Example usage is 'bash vae_plots_dir.sh INPUT_DIR --output_dir OUTPUT_DIR --reconstructions --embedding --loss'.
+
 
 Abstract:
 
